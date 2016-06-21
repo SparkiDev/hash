@@ -1,5 +1,5 @@
-Shamir's Secret Sharing
-=======================
+Hash Algorithms
+===============
 
 Open Source Hash Algorithms Implementation
 
