@@ -29,7 +29,7 @@
  * @param [in] s  The number of bits to shift right.
  * @return  Rotated number.
  */
-#define ROTR_32(n, s)	(((n) >> s) | ((n) << (32 - s)))
+#define ROTR32(n, s)	(((n) >> s) | ((n) << (32 - s)))
 /**
  * Rotate right 64-bit integer.
  *
@@ -37,7 +37,7 @@
  * @param [in] s  The number of bits to shift right.
  * @return  Rotated number.
  */
-#define ROTR_64(n, s)	(((n) >> s) | ((n) << (64 - s)))
+#define ROTR64(n, s)	(((n) >> s) | ((n) << (64 - s)))
 /**
  * Shift right integer.
  *

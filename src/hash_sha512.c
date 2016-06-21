@@ -27,7 +27,7 @@
 #include "hash_sha2.h"
 
 /** The constants k to use with SHA-512 block operation (and SHA-384, etc.). */
-static uint64_t hash_sha512_k[] =
+static const uint64_t hash_sha512_k[] =
 {
     0x428a2f98d728ae22L, 0x7137449123ef65cdL,
     0xb5c0fbcfec4d3b2fL, 0xe9b5dba58189dbbcL,
@@ -71,56 +71,101 @@ static uint64_t hash_sha512_k[] =
     0x5fcb6fab3ad6faecL, 0x6c44198c4a475817L
 };
 
+#define W(i,o)	w[(i+(16-o)) & 15]
+#define MIX_W(w, i)							\
+    W(i,7) +								\
+    (ROTR64(W(i,15),1) ^ ROTR64(W(i,15),8) ^ SHFTR(W(i,15),7)) +	\
+    (ROTR64(W(i,2),19) ^ ROTR64(W(i,2),61) ^ SHFTR(W(i,2),6))
+
+#define S1(n)		(ROTR64(n, 14) ^ ROTR64(n, 18) ^ ROTR64(n, 41))
+#define S0(n)		(ROTR64(n, 28) ^ ROTR64(n, 34) ^ ROTR64(n, 39))
+#ifdef HASH_SHA2_SPEC
+#define CH(a,b,c)	((a & b) ^ ((~a) & c))
+#define MAJ(a,b c)	((a & b) ^ (a & c) ^ (b & c))
+#else
+#define CH(a,b,c)	(c ^ (a & (b ^ c)))
+#define MAJ(a,b,c)	((a & b) ^ (a & c) ^ (b & c))
+#endif
+
+#define T(o,j)  (t[(o-j)&7])
+#define MIX_T(t, i, j)							\
+do									\
+{									\
+    uint64_t s1, ch, t1, s0, maj, t2;					\
+									\
+    s1 = S1(T(4,j));							\
+    ch = CH(T(4,j), T(5,j), T(6,j));					\
+    t1 = T(7,j) + s1 + ch + hash_sha512_k[i+j] + w[j];			\
+    s0 = S0(T(0,j));							\
+    maj = MAJ(T(0,j), T(1,j), T(2,j));					\
+    t2 = s0 + maj;							\
+									\
+    T(3,j) += t1;							\
+    T(7,j) = t1 + t2;							\
+}									\
+while (0)
+
 /**
  * Process one block of data (512 bits) for SHA-512.
  *
  * @param [in] ctx  The SHA-512 context object.
+ * @param [in] m    The message data to digest.
  */
-static void hash_sha512_block(HASH_SHA512 *ctx)
+static void hash_sha512_block(HASH_SHA512 *ctx, const uint8_t *m)
 {
     unsigned char i, j;
-    uint8_t *m = ctx->m;
     uint64_t *h = ctx->h;
     uint64_t w[16];
     uint64_t t[8];
 
-    memcpy(t, h, sizeof(t));
+    for (i=0; i<8; i++)
+        t[i] = h[i];
     for (i=0; i<16; i++)
     {
         w[i] = 0;
         for (j=0; j<8; j++)
             w[i] |= ((uint64_t)m[i*8+j]) << ((7-j)*8);
     }
-    for (i=0; i<80; i++)
+    for (i=0; i<80; i+=16)
     {
-        uint64_t s1, ch, t1, s0, maj, t2;
-
         if (i >= 16)
         {
-            j = (i - 15) & 15;
-            s0 = ROTR_64(w[j], 1) ^ ROTR_64(w[j], 8) ^ SHFTR(w[j], 7);
-            j = (i - 2) & 15;
-            s1 = ROTR_64(w[j], 19) ^ ROTR_64(w[j], 61) ^ SHFTR(w[j], 6);
-            j = (i - 7) & 15;
-            w[i & 15] += s0 + w[j] + s1;
+            w[0] += MIX_W(w, 0);
+            w[1] += MIX_W(w, 1);
+            w[2] += MIX_W(w, 2);
+            w[3] += MIX_W(w, 3);
+            w[4] += MIX_W(w, 4);
+            w[5] += MIX_W(w, 5);
+            w[6] += MIX_W(w, 6);
+            w[7] += MIX_W(w, 7);
+            w[8] += MIX_W(w, 8);
+            w[9] += MIX_W(w, 9);
+            w[10] += MIX_W(w, 10);
+            w[11] += MIX_W(w, 11);
+            w[12] += MIX_W(w, 12);
+            w[13] += MIX_W(w, 13);
+            w[14] += MIX_W(w, 14);
+            w[15] += MIX_W(w, 15);
         }
 
-        s1 = ROTR_64(t[4], 14) ^ ROTR_64(t[4], 18) ^ ROTR_64(t[4], 41);
-        ch = (t[4] & t[5]) ^ ((~t[4]) & t[6]);
-        t1 = t[7] + s1 + ch + hash_sha512_k[i] + w[i & 15];
-        s0 = ROTR_64(t[0], 28) ^ ROTR_64(t[0], 34) ^ ROTR_64(t[0], 39);
-        maj = (t[0] & t[1]) ^ (t[0] & t[2]) ^ (t[1] & t[2]);
-        t2 = s0 + maj;
-
-        t[7] = t[6];
-        t[6] = t[5];
-        t[5] = t[4];
-        t[4] = t[3] + t1;
-        t[3] = t[2];
-        t[2] = t[1];
-        t[1] = t[0];
-        t[0] = t1 + t2;
+        MIX_T(t, i, 0);
+        MIX_T(t, i, 1);
+        MIX_T(t, i, 2);
+        MIX_T(t, i, 3);
+        MIX_T(t, i, 4);
+        MIX_T(t, i, 5);
+        MIX_T(t, i, 6);
+        MIX_T(t, i, 7);
+        MIX_T(t, i, 8);
+        MIX_T(t, i, 9);
+        MIX_T(t, i, 10);
+        MIX_T(t, i, 11);
+        MIX_T(t, i, 12);
+        MIX_T(t, i, 13);
+        MIX_T(t, i, 14);
+        MIX_T(t, i, 15);
     }
+
     for (i=0; i<8; i++)
         h[i] += t[i];
 }
@@ -139,14 +184,14 @@ static void hash_sha512_fin(HASH_SHA512 *ctx)
     uint8_t *m = ctx->m;
     uint8_t o = ctx->o;
     uint64_t len_lo = ctx->len_lo << 3;
-    uint64_t len_hi = (ctx->len_hi << 3)| (ctx->len_lo >> 61);
+    uint64_t len_hi = (ctx->len_hi << 3) | (ctx->len_lo >> 61);
 
     m[o++] = 0x80;
 
     if (o > 112)
     {
         memset(&m[o], 0, 128 - o);
-        hash_sha512_block(ctx);
+        hash_sha512_block(ctx, m);
         o = 0;
     }
     memset(&m[o], 0, 112-o);
@@ -154,7 +199,7 @@ static void hash_sha512_fin(HASH_SHA512 *ctx)
         m[112+i] = len_hi >> ((7-i)*8);
     for (i=0; i<8; i++)
         m[120+i] = len_lo >> ((7-i)*8);
-    hash_sha512_block(ctx);
+    hash_sha512_block(ctx, m);
 }
 
 /** The initial h0 value for SHA-384. */
@@ -177,7 +222,7 @@ static void hash_sha512_fin(HASH_SHA512 *ctx)
 /**
  * Initialize the hash object calculating a SHA-384 digest.
  *
- * @param [in] ctx  The SHA256 context object.
+ * @param [in] ctx  The SHA512 context object.
  * @return  1 to indicate success.
  */
 int hash_sha384_init(HASH_SHA512 *ctx)
@@ -240,7 +285,7 @@ int hash_sha384_final(unsigned char *md, HASH_SHA512 *ctx)
 /**
  * Initialize the hash object calculating a SHA-512 digest.
  *
- * @param [in] ctx  The SHA256 context object.
+ * @param [in] ctx  The SHA512 context object.
  * @return  1 to indicate success.
  */
 int hash_sha512_init(HASH_SHA512 *ctx)
@@ -271,33 +316,44 @@ int hash_sha512_init(HASH_SHA512 *ctx)
  */
 int hash_sha512_update(HASH_SHA512 *ctx, const void *data, size_t len)
 {
+    size_t i;
     size_t l;
     uint8_t *m = ctx->m;
     uint8_t o = ctx->o;
-    uint64_t len_lo = ctx->len_lo;
     const uint8_t *d = data;
+    uint8_t *t;
 
     ctx->len_lo += len;
-    if (ctx->len_lo < len_lo)
+    if (ctx->len_lo < len)
         ctx->len_hi++;
 
-    while (1)
+    if (o > 0)
     {
         l = 128 - o;
         if (len < l) l = len;
-        memcpy(&m[o], d, l);
+
+        t = &m[o];
+        for (i=0; i<l; i++)
+            t[i] = d[i];
         d += l;
         len -= l;
         o += l;
 
-        if (o < 128)
-            break;
-
-        hash_sha512_block(ctx);
-        o = 0;
+        if (o == 128)
+        {
+            hash_sha512_block(ctx, m);
+            o = 0;
+        }
     }
-
-    ctx->o = o;
+    while (len >= 128)
+    {
+        hash_sha512_block(ctx, d);
+        d += 128;
+        len -= 128;
+    }
+    for (i=0; i<len; i++)
+        m[i] = d[i];
+    ctx->o = o + len;
 
     return 1;
 }
@@ -344,7 +400,7 @@ int hash_sha512_final(unsigned char *md, HASH_SHA512 *ctx)
 /**
  * Initialize the hash object calculating a SHA-512_224 digest.
  *
- * @param [in] ctx  The SHA256 context object.
+ * @param [in] ctx  The SHA512 context object.
  * @return  1 to indicate success.
  */
 int hash_sha512_224_init(HASH_SHA512 *ctx)
@@ -409,7 +465,7 @@ int hash_sha512_224_final(unsigned char *md, HASH_SHA512 *ctx)
 /**
  * Initialize the hash object calculating a SHA-512_224 digest.
  *
- * @param [in] ctx  The SHA256 context object.
+ * @param [in] ctx  The SHA512 context object.
  * @return  1 to indicate success.
  */
 int hash_sha512_256_init(HASH_SHA512 *ctx)

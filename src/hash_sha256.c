@@ -26,7 +26,7 @@
 #include "hash_sha2.h"
 
 /** The constants k to use with SHA-256 block operation (and SHA-224). */
-static uint32_t hash_sha256_k[] =
+static const uint32_t hash_sha256_k[] =
 {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -46,56 +46,102 @@ static uint32_t hash_sha256_k[] =
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
+#define W(i,o)	w[(i+(16-o)) & 15]
+#define MIX_W(w, i)							\
+    W(i,7) +								\
+    (ROTR32(W(i,15),7) ^ ROTR32(W(i,15),18) ^ SHFTR(W(i,15),3)) +	\
+    (ROTR32(W(i,2),17) ^ ROTR32(W(i,2),19) ^ SHFTR(W(i,2),10))
+
+#define S1(n)		(ROTR32(n, 6) ^ ROTR32(n, 11) ^ ROTR32(n, 25))
+#define S0(n)		(ROTR32(n, 2) ^ ROTR32(n, 13) ^ ROTR32(n, 22))
+#ifdef HASH_SHA2_SPEC
+#define CH(a,b,c)	((a & b) ^ ((~a) & c))
+#define MAJ(a,b,c)    ((a & b) ^ (a & c) ^ (b & c))
+#else
+#define CH(a,b,c)	(c ^ (a & (b ^ c)))
+#define MAJ(a,b,c)    ((a & b) ^ (a & c) ^ (b & c))
+#endif
+
+#define T(o,j)	(t[(o-j)&7])
+#define MIX_T(t, i, j)							\
+do									\
+{									\
+    uint32_t s1, ch, t1, s0, maj, t2;					\
+									\
+    s1 = S1(T(4,j));							\
+    ch = CH(T(4,j), T(5,j), T(6,j));					\
+    t1 = T(7,j) + s1 + ch + hash_sha256_k[i+j] + w[j];			\
+    s0 = S0(T(0,j));							\
+    maj = MAJ(T(0,j), T(1,j), T(2,j));					\
+    t2 = s0 + maj;							\
+									\
+    T(3,j) += t1;							\
+    T(7,j) = t1 + t2;							\
+}									\
+while (0)
+
 /**
  * Process one block of data (512 bits) for SHA-256.
  *
  * @param [in] ctx  The SHA256 context object.
+ * @param [in] m    The message data to digest.
  */
-static void hash_sha256_block(HASH_SHA256 *ctx)
+static void hash_sha256_block(HASH_SHA256 *ctx, const uint8_t *m)
 {
     unsigned char i, j;
-    uint8_t *m = ctx->m;
     uint32_t *h = ctx->h;
     uint32_t w[16];
     uint32_t t[8];
 
-    memcpy(t, h, sizeof(t));
+    for (i=0; i<8; i++)
+        t[i] = h[i];
     for (i=0; i<16; i++)
     {
         w[i] = 0;
         for (j=0; j<4; j++)
             w[i] |= ((uint32_t)m[i*4+j]) << ((3-j)*8);
     }
-    for (i=0; i<64; i++)
-    {
-        uint32_t s1, ch, t1, s0, maj, t2;
 
+    for (i=0; i<64; i+=16)
+    {
         if (i >= 16)
         {
-            j = (i - 15) & 15;
-            s0 = ROTR_32(w[j], 7) ^ ROTR_32(w[j], 18) ^ SHFTR(w[j], 3);
-            j = (i - 2) & 15;
-            s1 = ROTR_32(w[j], 17) ^ ROTR_32(w[j], 19) ^ SHFTR(w[j], 10);
-            j = (i - 7) & 15;
-            w[i & 15] += s0 + w[j] + s1;
+            w[0] += MIX_W(w, 0);
+            w[1] += MIX_W(w, 1);
+            w[2] += MIX_W(w, 2);
+            w[3] += MIX_W(w, 3);
+            w[4] += MIX_W(w, 4);
+            w[5] += MIX_W(w, 5);
+            w[6] += MIX_W(w, 6);
+            w[7] += MIX_W(w, 7);
+            w[8] += MIX_W(w, 8);
+            w[9] += MIX_W(w, 9);
+            w[10] += MIX_W(w, 10);
+            w[11] += MIX_W(w, 11);
+            w[12] += MIX_W(w, 12);
+            w[13] += MIX_W(w, 13);
+            w[14] += MIX_W(w, 14);
+            w[15] += MIX_W(w, 15);
         }
 
-        s1 = ROTR_32(t[4], 6) ^ ROTR_32(t[4], 11) ^ ROTR_32(t[4], 25);
-        ch = (t[4] & t[5]) ^ ((~t[4]) & t[6]);
-        t1 = t[7] + s1 + ch + hash_sha256_k[i] + w[i & 15];
-        s0 = ROTR_32(t[0], 2) ^ ROTR_32(t[0], 13) ^ ROTR_32(t[0], 22);
-        maj = (t[0] & t[1]) ^ (t[0] & t[2]) ^ (t[1] & t[2]);
-        t2 = s0 + maj;
-
-        t[7] = t[6];
-        t[6] = t[5];
-        t[5] = t[4];
-        t[4] = t[3] + t1;
-        t[3] = t[2];
-        t[2] = t[1];
-        t[1] = t[0];
-        t[0] = t1 + t2;
+        MIX_T(t, i, 0);
+        MIX_T(t, i, 1);
+        MIX_T(t, i, 2);
+        MIX_T(t, i, 3);
+        MIX_T(t, i, 4);
+        MIX_T(t, i, 5);
+        MIX_T(t, i, 6);
+        MIX_T(t, i, 7);
+        MIX_T(t, i, 8);
+        MIX_T(t, i, 9);
+        MIX_T(t, i, 10);
+        MIX_T(t, i, 11);
+        MIX_T(t, i, 12);
+        MIX_T(t, i, 13);
+        MIX_T(t, i, 14);
+        MIX_T(t, i, 15);
     }
+
     for (i=0; i<8; i++)
         h[i] += t[i];
 }
@@ -120,13 +166,13 @@ static void hash_sha256_fin(HASH_SHA256 *ctx)
     if (o > 56)
     {
         memset(&m[o], 0, 64 - o);
-        hash_sha256_block(ctx);
+        hash_sha256_block(ctx, m);
         o = 0;
     }
     memset(&m[o], 0, 56-o);
     for (i=0; i<8; i++)
         m[56+i] = len >> ((7-i)*8);
-    hash_sha256_block(ctx);
+    hash_sha256_block(ctx, m);
 }
 
 /** The initial h0 value for SHA-224. */
@@ -241,30 +287,42 @@ int hash_sha256_init(HASH_SHA256 *ctx)
  */
 int hash_sha256_update(HASH_SHA256 *ctx, const void *data, size_t len)
 {
+    size_t i;
     size_t l;
     uint8_t *m = ctx->m;
     uint8_t o = ctx->o;
     const uint8_t *d = data;
+    uint8_t *t;
 
     ctx->len += len;
 
-    while (1)
+    if (o > 0)
     {
         l = 64 - o;
         if (len < l) l = len;
-        memcpy(&m[o], d, l);
+    
+        t = &m[o];
+        for (i=0; i<l; i++)
+            t[i] = d[i];
         d += l;
         len -= l;
         o += l;
 
-        if (o < 64)
-            break;
-
-        hash_sha256_block(ctx);
-        o = 0;
+        if (o == 64)
+        {
+            hash_sha256_block(ctx, m);
+            o = 0;
+        }
     }
-
-    ctx->o = o;
+    while (len >= 64)
+    {
+        hash_sha256_block(ctx, d);
+        d += 64;
+        len -= 64;
+    }
+    for (i=0; i<len; i++)
+        m[i] = d[i];
+    ctx->o = o + len;
 
     return 1;
 }
