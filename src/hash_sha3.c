@@ -30,7 +30,7 @@
  * @param [in] r  The number od bits to rotate left.
  * @return  The rotated number.
  */
-#define ROL(a, n)    (((a)<<(n))|((a)>>(64-(n))))
+#define ROTL64(a, n)    (((a)<<(n))|((a)>>(64-(n))))
 
 /**
  * Put an array of bytes into a 64-bit number.
@@ -127,7 +127,7 @@ static uint64_t hash_keccak_r[24] =
 #define SWAP(s, t1, t2, i)						\
 do									\
 {									\
-    t2 = s[K_I_##i]; s[K_I_##i] = ROL(t1, K_R_##i);			\
+    t2 = s[K_I_##i]; s[K_I_##i] = ROTL64(t1, K_R_##i);			\
 }									\
 while (0)
 
@@ -146,7 +146,7 @@ do									\
         b[x] = s[x+0] ^ s[x+5] ^ s[x+10] ^ s[x+15] ^ s[x+20];		\
     for (x=0; x<5; x++)							\
     {									\
-        t = b[(x+4)%5] ^ ROL(b[(x+1)%5], 1);				\
+        t = b[(x+4)%5] ^ ROTL64(b[(x+1)%5], 1);				\
         s[x+0]^=t; s[x+5]^=t; s[x+10]^=t; s[x+15]^=t; s[x+20]^=t;	\
     }									\
 }									\
