@@ -132,11 +132,11 @@ do									\
 while (0)
 
 /**
- * Mix the XOR of the colums values into each number by column.
+ * Mix the XOR of the column's values into each number by column.
  *
  * @param [in] s  The state.
  * @param [in] b  Temporary array of XORed column values.
- * @param [in] x   The index of the column.
+ * @param [in] x  The index of the column.
  * @param [in] t  Temporary variable.
  */
 #define COL_MIX(s, b, x, t)						\
