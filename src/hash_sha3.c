@@ -50,7 +50,7 @@ static uint64_t hash_keccak_le64(const uint8_t *x)
 }
 
 /** An array of values to XOR for block operation. */
-static uint64_t hash_keccak_r[24] = 
+static const uint64_t hash_keccak_r[24] = 
 {
     0x0000000000000001UL, 0x0000000000008082UL,
     0x800000000000808aUL, 0x8000000080008000UL,
@@ -117,14 +117,14 @@ static uint64_t hash_keccak_r[24] =
 #define K_R_23	44
 
 /**
- * Swap operation.
+ * Swap and rotate left operation.
  *
  * @param [in] s   The state.
  * @param [in] t1  Temporary value.
  * @param [in] t2  Second temporary value.
  * @param [in] i   The index of the loop.
  */
-#define SWAP(s, t1, t2, i)						\
+#define SWAP_ROTL(s, t1, t2, i)						\
 do									\
 {									\
     t2 = s[K_I_##i]; s[K_I_##i] = ROTL64(t1, K_R_##i);			\
@@ -222,30 +222,30 @@ static void hash_keccak_block(uint64_t *s)
         COL_MIX(s, b, x, t0);
 
         t0 = s[1];
-        SWAP(s, t0, t1,  0);
-        SWAP(s, t1, t0,  1);
-        SWAP(s, t0, t1,  2);
-        SWAP(s, t1, t0,  3);
-        SWAP(s, t0, t1,  4);
-        SWAP(s, t1, t0,  5);
-        SWAP(s, t0, t1,  6);
-        SWAP(s, t1, t0,  7);
-        SWAP(s, t0, t1,  8);
-        SWAP(s, t1, t0,  9);
-        SWAP(s, t0, t1, 10);
-        SWAP(s, t1, t0, 11);
-        SWAP(s, t0, t1, 12);
-        SWAP(s, t1, t0, 13);
-        SWAP(s, t0, t1, 14);
-        SWAP(s, t1, t0, 15);
-        SWAP(s, t0, t1, 16);
-        SWAP(s, t1, t0, 17);
-        SWAP(s, t0, t1, 18);
-        SWAP(s, t1, t0, 19);
-        SWAP(s, t0, t1, 20);
-        SWAP(s, t1, t0, 21);
-        SWAP(s, t0, t1, 22);
-        SWAP(s, t1, t0, 23);
+        SWAP_ROTL(s, t0, t1,  0);
+        SWAP_ROTL(s, t1, t0,  1);
+        SWAP_ROTL(s, t0, t1,  2);
+        SWAP_ROTL(s, t1, t0,  3);
+        SWAP_ROTL(s, t0, t1,  4);
+        SWAP_ROTL(s, t1, t0,  5);
+        SWAP_ROTL(s, t0, t1,  6);
+        SWAP_ROTL(s, t1, t0,  7);
+        SWAP_ROTL(s, t0, t1,  8);
+        SWAP_ROTL(s, t1, t0,  9);
+        SWAP_ROTL(s, t0, t1, 10);
+        SWAP_ROTL(s, t1, t0, 11);
+        SWAP_ROTL(s, t0, t1, 12);
+        SWAP_ROTL(s, t1, t0, 13);
+        SWAP_ROTL(s, t0, t1, 14);
+        SWAP_ROTL(s, t1, t0, 15);
+        SWAP_ROTL(s, t0, t1, 16);
+        SWAP_ROTL(s, t1, t0, 17);
+        SWAP_ROTL(s, t0, t1, 18);
+        SWAP_ROTL(s, t1, t0, 19);
+        SWAP_ROTL(s, t0, t1, 20);
+        SWAP_ROTL(s, t1, t0, 21);
+        SWAP_ROTL(s, t0, t1, 22);
+        SWAP_ROTL(s, t1, t0, 23);
 
         ROW_MIX(s, b, y, x, t0, t1);
 
