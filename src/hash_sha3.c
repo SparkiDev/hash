@@ -155,7 +155,7 @@ while (0)
 #ifdef SHA3_BY_SPEC
 /**
  * Mix the row values.
- * BMI1 has ANDN instruction ((~a) & b) - Haswell and above
+ * BMI1 has ANDN instruction ((~a) & b) - Haswell and above.
  *
  * @param [in] s   The state.
  * @param [in] b   Temporary array of XORed row values.
