@@ -119,19 +119,19 @@ static void blake2b_compress(HASH_BLAKE2B *ctx, const uint8_t *b, int last)
     uint64_t s[16];
     uint64_t d[16];
 
-    /* Even when little-endian - holds data locally. */
-    for (i=0; i<16; i++)
-        BA2N_64_LE(d[i], &b[8 * i]);
-
     /* Init working state. */
-    for (i = 0; i < 8; i++)
+    for (i=0; i<8; i++)
         s[i] = ctx->h[i];
-    for (i = 0; i < 8; i++)
-        s[i + 8] = blake2b_iv[i];
+    for (i=0; i<8; i++)
+        s[i+8] = blake2b_iv[i];
 
     s[12] ^= ctx->n[0];
     s[13] ^= ctx->n[1];
     s[14] ^= last;
+
+    /* Even when little-endian - holds data locally. */
+    for (i=0; i<16; i++)
+        BA2N_64_LE(d[i], &b[i*8]);
 
     MIX_G_I(s, d, 0);
     MIX_G_I(s, d, 1);
@@ -147,7 +147,7 @@ static void blake2b_compress(HASH_BLAKE2B *ctx, const uint8_t *b, int last)
     MIX_G_I(s, d, 11);
 
     for (i=0; i<8; i++)
-        ctx->h[i] ^= s[i] ^ s[i + 8];
+        ctx->h[i] ^= s[i] ^ s[i+8];
 }
 
 /**
@@ -166,7 +166,7 @@ static int blake2b_mac_init(HASH_BLAKE2B *ctx, size_t outlen, const void *key,
     size_t i;
 
     if (keylen > 64)
-        return 1;
+        return 0;
 
     for (i=0; i<8; i++)
         ctx->h[i] = blake2b_iv[i];
@@ -181,7 +181,7 @@ static int blake2b_mac_init(HASH_BLAKE2B *ctx, size_t outlen, const void *key,
     blake2b_update(ctx, key, keylen);
     ctx->i = 128;
 
-    return 0;
+    return 1;
 }
 
 /**
@@ -280,10 +280,11 @@ static void blake2b_final(HASH_BLAKE2B *ctx, void *out, size_t outlen)
 
     /* Little-endian output. */
 #ifdef HASH_BENDIAN
-    for (i = 0; i < outlen; i++)
-        ((uint8_t *)out)[i] = (ctx->h[i >> 3] >> (8 * (i & 7))) & 0xFF;
+    for (i=0; i<outlen; i++)
+        ((uint8_t *)out)[i] = (ctx->h[i>>3] >> (8*(i&7))) & 0xFF;
 #else
-    memcpy(out, ctx->h, outlen);
+    for (i=0; i<outlen; i++)
+        ((uint8_t *)out)[i] = ((uint8_t *)ctx->h)[i];
 #endif
 }
 
@@ -293,8 +294,8 @@ static void blake2b_final(HASH_BLAKE2B *ctx, void *out, size_t outlen)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] key     The key data.
  * @param [in] keylen  The length of the key data.
- * @return  1 when the key length is too big.<br>
- *          0 otherwise.
+ * @return  0 when the key length is too big.<br>
+ *          1 otherwise.
  */
 int hash_blake2b_224_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
 {
@@ -306,8 +307,8 @@ int hash_blake2b_224_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] key     The key data.
  * @param [in] keylen  The length of the key data.
- * @return  1 when the key length is too big.<br>
- *          0 otherwise.
+ * @return  0 when the key length is too big.<br>
+ *          1 otherwise.
  */
 int hash_blake2b_256_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
 {
@@ -319,8 +320,8 @@ int hash_blake2b_256_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] key     The key data.
  * @param [in] keylen  The length of the key data.
- * @return  1 when the key length is too big.<br>
- *          0 otherwise.
+ * @return  0 when the key length is too big.<br>
+ *          1 otherwise.
  */
 int hash_blake2b_384_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
 {
@@ -332,8 +333,8 @@ int hash_blake2b_384_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] key     The key data.
  * @param [in] keylen  The length of the key data.
- * @return  1 when the key length is too big.<br>
- *          0 otherwise.
+ * @return  0 when the key length is too big.<br>
+ *          1 otherwise.
  */
 int hash_blake2b_512_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
 {
@@ -344,45 +345,45 @@ int hash_blake2b_512_mac_init(HASH_BLAKE2B *ctx, const void *key, size_t len)
  * Initialize a digest operation for BLAKE2b with 224-bit output.
  *
  * @param [in] ctx     The BLAKE2b hash context.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_224_init(HASH_BLAKE2B *ctx)
 {
     blake2b_init(ctx, 28);
-    return 0;
+    return 1;
 }
 /**
  * Initialize a digest operation for BLAKE2b with 256-bit output.
  *
  * @param [in] ctx     The BLAKE2b hash context.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_256_init(HASH_BLAKE2B *ctx)
 {
     blake2b_init(ctx, 32);
-    return 0;
+    return 1;
 }
 /**
  * Initialize a digest operation for BLAKE2b with 384-bit output.
  *
  * @param [in] ctx     The BLAKE2b hash context.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_384_init(HASH_BLAKE2B *ctx)
 {
     blake2b_init(ctx, 48);
-    return 0;
+    return 1;
 }
 /**
  * Initialize a digest operation for BLAKE2b with 512-bit output.
  *
  * @param [in] ctx     The BLAKE2b hash context.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_512_init(HASH_BLAKE2B *ctx)
 {
     blake2b_init(ctx, 64);
-    return 0;
+    return 1;
 }
 
 /**
@@ -391,12 +392,12 @@ int hash_blake2b_512_init(HASH_BLAKE2B *ctx)
  * @param [in] ctx  The BLAKE2b hash context.
  * @param [in] in   The message data.
  * @param [in] len  The length of the message data.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_update(HASH_BLAKE2B *ctx, const void *in, size_t len)
 {
     blake2b_update(ctx, in, len);
-    return 0;
+    return 1;
 }
 
 /**
@@ -405,12 +406,12 @@ int hash_blake2b_update(HASH_BLAKE2B *ctx, const void *in, size_t len)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] out     The digest/MAC ouput.
  * @param [in] outlen  The length of the digest/MAC output.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_224_final(void *out, HASH_BLAKE2B *ctx)
 {
     blake2b_final(ctx, out, 24);
-    return 0;
+    return 1;
 }
 /**
  * Finalize the digest/MAX and generate output of 256 bits.
@@ -418,12 +419,12 @@ int hash_blake2b_224_final(void *out, HASH_BLAKE2B *ctx)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] out     The digest/MAC ouput.
  * @param [in] outlen  The length of the digest/MAC output.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_256_final(void *out, HASH_BLAKE2B *ctx)
 {
     blake2b_final(ctx, out, 32);
-    return 0;
+    return 1;
 }
 /**
  * Finalize the digest/MAX and generate output of 384 bits.
@@ -431,12 +432,12 @@ int hash_blake2b_256_final(void *out, HASH_BLAKE2B *ctx)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] out     The digest/MAC ouput.
  * @param [in] outlen  The length of the digest/MAC output.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_384_final(void *out, HASH_BLAKE2B *ctx)
 {
     blake2b_final(ctx, out, 48);
-    return 0;
+    return 1;
 }
 /**
  * Finalize the digest/MAX and generate output of 512 bits.
@@ -444,11 +445,11 @@ int hash_blake2b_384_final(void *out, HASH_BLAKE2B *ctx)
  * @param [in] ctx     The BLAKE2b hash context.
  * @param [in] out     The digest/MAC ouput.
  * @param [in] outlen  The length of the digest/MAC output.
- * @return  0 to indicate success.
+ * @return  1 to indicate success.
  */
 int hash_blake2b_512_final(void *out, HASH_BLAKE2B *ctx)
 {
     blake2b_final(ctx, out, 64);
-    return 0;
+    return 1;
 }
 
