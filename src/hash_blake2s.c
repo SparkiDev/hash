@@ -32,13 +32,13 @@
 static void blake2s_update(HASH_BLAKE2S *ctx, const void *in, size_t inlen);
 
 /**
- * Rotate right 32-bit x by y bits.
+ * Rotate right 32-bit a by n bits.
  *
- * @param [in] x  The number to rotate.
- * @param [in] y  The number of bits to rotate.
+ * @param [in] a  The number to rotate.
+ * @param [in] n  The number of bits to rotate.
  * @return  The rotated result.
  */
-#define ROTR32(x, y)  (((x) >> (y)) | ((x) << (32 - (y))))
+#define ROTR32(a, n)  (((a) >> (n)) | ((a) << (32 - (n))))
 
 #ifdef HASH_BENDIAN
 /**
