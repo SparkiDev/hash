@@ -76,6 +76,11 @@ struct hash_st
 static HASH_METH hash_meths[] =
 {
 #ifdef OPT_HASH_OPENSSL
+    /* OpenSSL implementation of SHA-1. */
+    { "SHA-224 OpenSSL", 0,
+      HASH_ID_SHA1, 160/8, sizeof(SHA_CTX),
+      (HASH_INIT *)&SHA1_Init, (HASH_UPDATE *)&SHA1_Update,
+      (HASH_FINAL *)&SHA1_Final },
     /* OpenSSL implementation of SHA-224. */
     { "SHA-224 OpenSSL", 0,
       HASH_ID_SHA224, 224/8, sizeof(SHA256_CTX),
