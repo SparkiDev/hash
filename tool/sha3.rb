@@ -27,12 +27,10 @@ class SHA3
     def initialize(by_spec)
       @by_spec = by_spec
       @a = []
-      @ao = []
       0.upto(24) { |i| @a[i] = i }
     end
 
     def swap_rotl_24()
-      @ao = @a
       t1 = @a[@@index[0]]
       1.upto(24) do |i|
         t2 = @a[@@index[i]]
