@@ -30,7 +30,7 @@ class SHA3
       0.upto(24) { |i| @a[i] = i }
     end
 
-    def swap_rotl_24()
+    def swap_24()
       t1 = @a[@@index[0]]
       1.upto(24) do |i|
         t2 = @a[@@index[i]]
@@ -40,25 +40,29 @@ class SHA3
     end
 
     def col_mix()
+      puts "    /* Col Mix */"
       0.upto(4) do |x|
-        puts "    b[#{x}] = s[#{@a[x+0]}] ^ s[#{@a[x+5]}] ^ s[#{@a[x+10]}] ^ s[#{@a[x+15]}] ^ s[#{@a[x+20]}];"
+        i = [@a[x+0], @a[x+5], @a[x+10], @a[x+15], @a[x+20]].sort
+        puts "    b[#{x}] = s[#{i[0]}] ^ s[#{i[1]}] ^ s[#{i[2]}] ^ s[#{i[3]}] ^ s[#{i[4]}];"
       end
       0.upto(4) do |x|
         puts "    t = b[#{(x+4)%5}] ^ ROTL64(b[#{(x+1)%5}], 1);"
-        puts "    s[#{@a[x+0]}]^=t; s[#{@a[x+5]}]^=t; s[#{@a[x+10]}]^=t; s[#{@a[x+15]}]^=t; s[#{@a[x+20]}]^=t;"
+        i = [@a[x+0], @a[x+5], @a[x+10], @a[x+15], @a[x+20]].sort
+        puts "    s[#{i[0]}]^=t; s[#{i[1]}]^=t; s[#{i[2]}]^=t; s[#{i[3]}]^=t; s[#{i[4]}]^=t;"
       end
     end
 
     def row_mix()
+      puts "    /* Row Mix */"
       0.upto(4) do |y|
         0.upto(4) do |x|
           1.upto(24) do |j|
             if @@index[j] == y*5+x
-              puts "    s[#{@a[y*5+x]}] = ROTL64(s[#{@a[y*5+x]}], #{@@rotate[j]});"
+              puts "    b[#{x}] = ROTL64(s[#{@a[y*5+x]}], #{@@rotate[j]});"
               break
             end
           end
-          puts "    b[#{x}] = s[#{@a[y*5+x]}];"
+          puts "    b[#{x}] = s[#{@a[y*5+x]}];" if @a[y*5+x] == 0
         end
         if @by_spec
           0.upto(4) do |x|
@@ -104,12 +108,14 @@ EOF
 void hash_keccak_block(uint64_t *s)
 {
     uint64_t b[5], t;
-
 EOF
       0.upto(23) do |i|
+        puts
+        puts "    /* Round #{i}. */"
         col_mix()
-        swap_rotl_24()
+        swap_24()
         row_mix()
+        puts "    /* XOR in constant. */"
         puts "    s[#{@a[0]}] ^= 0x#{@@r[i].to_s(16)}UL;"
       end
       puts "}"
