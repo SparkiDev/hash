@@ -27,13 +27,12 @@ class SHA3
     def initialize(by_spec)
       @by_spec = by_spec
       @a = []
+      @ao = []
       0.upto(24) { |i| @a[i] = i }
     end
 
     def swap_rotl_24()
-      1.upto(24) do |i|
-        puts "    s[#{@a[@@index[i-1]]}] = ROTL64(s[#{@a[@@index[i-1]]}], #{@@rotate[i]});"
-      end
+      @ao = @a
       t1 = @a[@@index[0]]
       1.upto(24) do |i|
         t2 = @a[@@index[i]]
@@ -55,6 +54,12 @@ class SHA3
     def row_mix()
       0.upto(4) do |y|
         0.upto(4) do |x|
+          1.upto(24) do |j|
+            if @@index[j] == y*5+x
+              puts "    s[#{@a[y*5+x]}] = ROTL64(s[#{@a[y*5+x]}], #{@@rotate[j]});"
+              break
+            end
+          end
           puts "    b[#{x}] = s[#{@a[y*5+x]}];"
         end
         if @by_spec
