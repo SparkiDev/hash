@@ -25,16 +25,87 @@
 #include <string.h>
 #include "hash_sha1.h"
 
-/** The constants k to use with SHA-1 block operation. */
-static const uint32_t hash_sha1_k[] =
-{
-    0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6
-};
 
-#define F00(a, b, c, d, e)	(((b) & (c)) | ((~(b)) & d))
-#define F20(a, b, c, d, e)	((b) ^ (c) ^ (d))
-#define F40(a, b, c, d, e)	(((b) & (c)) | ((b) & (d)) | ((c) & (d)))
-#define F60(a, b, c, d, e)	((b) ^ (c) ^ (d))
+/** The first constant k to use with SHA-1 block operation. */
+#define HASH_SHA1_K_0	0x5A827999
+/** The second constant k to use with SHA-1 block operation. */
+#define HASH_SHA1_K_1	0x6ED9EBA1
+/** The third constant k to use with SHA-1 block operation. */
+#define HASH_SHA1_K_2	0x8F1BBCDC
+/** The fourth constant k to use with SHA-1 block operation. */
+#define HASH_SHA1_K_3	0xCA62C1D6
+
+/**
+ * Boolean function operation for loop iterations 0-19.
+ *
+ * @param [in] b  The second working state value.
+ * @param [in] c  The third working state value.
+ * @param [in] d  The fourth working state value.
+ * @return  The boolean operation result.
+ */
+#define F00_19(b, c, d)	(((b) & (c)) | ((~(b)) & d))
+/**
+ * Boolean function operation for loop iterations 20-39.
+ *
+ * @param [in] b  The second working state value.
+ * @param [in] c  The third working state value.
+ * @param [in] d  The fourth working state value.
+ * @return  The boolean operation result.
+ */
+#define F20_39(b, c, d)	((b) ^ (c) ^ (d))
+/**
+ * Boolean function operation for loop iterations 40-59.
+ *
+ * @param [in] b  The second working state value.
+ * @param [in] c  The third working state value.
+ * @param [in] d  The fourth working state value.
+ * @return  The boolean operation result.
+ */
+#define F40_59(b, c, d)	(((b) & (c)) | ((b) & (d)) | ((c) & (d)))
+/**
+ * Boolean function operation for loop iterations 60-79.
+ *
+ * @param [in] b  The second working state value.
+ * @param [in] c  The third working state value.
+ * @param [in] d  The fourth working state value.
+ * @return  The boolean operation result.
+ */
+#define F60_79(b, c, d)	((b) ^ (c) ^ (d))
+
+#ifdef SHA3_NO_BSWAP
+/**
+ * Convert 4 bytes of big-endian into a 32-bit number.
+ *
+ * @param [out] r  The 32-bit number.
+ * @param [in]  a  The array of bytes.
+ * @param [in]  c  Count of 32-bit numbers into the array.
+ */
+#define M32(r, a, c)			\
+   r = ((((uint32_t)a[c*4+0]) << 24) |	\
+        (((uint32_t)a[c*4+1]) << 16) |	\
+        (((uint32_t)a[c*4+2]) <<  8) |	\
+        (((uint32_t)a[c*4+3]) <<  0))
+#else
+/**
+ * Convert 4 bytes of big-endian into a 32-bit number.
+ *
+ * @param [out] r  The 32-bit number.
+ * @param [in]  a  The array of bytes.
+ * @param [in]  c  Count of 32-bit numbers into the array.
+ */
+#define M32(r, a, c)			\
+    do					\
+    {					\
+        register uint32_t t;		\
+        t = ((const uint32_t *)a)[c];	\
+        asm volatile ("bswap %0"	\
+                      :			\
+                      : "r" (t));	\
+        r = t;				\
+    }					\
+    while (0)
+#endif
+
 /**
  * Process one block of data (512 bits) for SHA-1.
  *
@@ -43,62 +114,89 @@ static const uint32_t hash_sha1_k[] =
  */
 static void hash_sha1_block(HASH_SHA1 *ctx, const uint8_t *m)
 {
-    unsigned char i, j;
+    uint8_t i;
     uint32_t *h = ctx->h;
-    uint32_t w[16];
-    uint32_t t[5];
-    uint32_t k;
-    uint32_t f;
-    uint32_t temp;
+    uint32_t w[77];
+    uint32_t t[6];
 
-    for (i=0; i<5; i++)
-        t[i] = h[i];
+    t[0] = h[0];
+    t[1] = h[1];
+    t[2] = h[2];
+    t[3] = h[3];
+    t[4] = h[4];
+
     for (i=0; i<16; i++)
     {
-        w[i] = 0;
-        for (j=0; j<4; j++)
-            w[i] |= ((uint32_t)m[i*4+j]) << ((3-j)*8);
-    }
-
-    for (i=0; i<80; i++)
-    {
-        j = i & 15;
-        if (i >= 16)
-            w[j] = ROTL32(w[(16+j-3)&15] ^
-                          w[(16+j-8)&15] ^
-                          w[(16+j-14)&15] ^ w[j], 1);
-
-        if (i < 20)
-        {
-            f = F00(t[0], t[1], t[2], t[3], t[4]);
-            k = hash_sha1_k[0];
-        }
-        else if (i < 40)
-        {
-            f = F20(t[0], t[1], t[2], t[3], t[4]);
-            k = hash_sha1_k[1];
-        }
-        else if (i < 60)
-        {
-            f = F40(t[0], t[1], t[2], t[3], t[4]);
-            k = hash_sha1_k[2];
-        }
-        else
-        {
-            f = F60(t[0], t[1], t[2], t[3], t[4]);
-            k = hash_sha1_k[3];
-        }
-
-        temp = ROTL32(t[0], 5) + f + t[4] + k + w[j];
+        M32(w[i], m, i);
+        t[5] = t[4] + HASH_SHA1_K_0 + ROTL32(t[0], 5) + w[i] +
+            F00_19(t[1], t[2], t[3]);
         t[4] = t[3];
         t[3] = t[2];
         t[2] = ROTL32(t[1], 30);
         t[1] = t[0];
-        t[0] = temp;
+        t[0] = t[5];
+    }
+    for (; i<20; i++)
+    {
+        w[i] = ROTL32(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+        t[5] = t[4] + HASH_SHA1_K_0 + ROTL32(t[0], 5) + w[i] +
+            F00_19(t[1], t[2], t[3]);
+        t[4] = t[3];
+        t[3] = t[2];
+        t[2] = ROTL32(t[1], 30);
+        t[1] = t[0];
+        t[0] = t[5];
+    }
+    for (; i<40; i++)
+    {
+        w[i] = ROTL32(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+        t[5] = t[4] + HASH_SHA1_K_1 + ROTL32(t[0], 5) + w[i] +
+            F20_39(t[1], t[2], t[3]);
+        t[4] = t[3];
+        t[3] = t[2];
+        t[2] = ROTL32(t[1], 30);
+        t[1] = t[0];
+        t[0] = t[5];
+    }
+    for (; i<60; i++)
+    {
+        w[i] = ROTL32(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+        t[5] = t[4] + HASH_SHA1_K_2 + ROTL32(t[0], 5) + w[i] +
+            F40_59(t[1], t[2], t[3]);
+        t[4] = t[3];
+        t[3] = t[2];
+        t[2] = ROTL32(t[1], 30);
+        t[1] = t[0];
+        t[0] = t[5];
+    }
+    for (; i<77; i++)
+    {
+        w[i] = ROTL32(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+        t[5] = t[4] + HASH_SHA1_K_3 + ROTL32(t[0], 5) + w[i] +
+            F60_79(t[1], t[2], t[3]);
+        t[4] = t[3];
+        t[3] = t[2];
+        t[2] = ROTL32(t[1], 30);
+        t[1] = t[0];
+        t[0] = t[5];
+    }
+    for (; i<80; i++)
+    {
+        t[5] = ROTL32(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+        t[5] += t[4] + HASH_SHA1_K_3 + ROTL32(t[0], 5) +
+            F60_79(t[1], t[2], t[3]);
+        t[4] = t[3];
+        t[3] = t[2];
+        t[2] = ROTL32(t[1], 30);
+        t[1] = t[0];
+        t[0] = t[5];
     }
 
-    for (i=0; i<5; i++)
-        h[i] += t[i];
+    h[0] += t[0];
+    h[1] += t[1];
+    h[2] += t[2];
+    h[3] += t[3];
+    h[4] += t[4];
 }
 
 /**
