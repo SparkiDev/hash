@@ -20,20 +20,29 @@
 #
 
 
-all: hash_test
+all: $(LIBNAME) hash_test
 
-HASH_OBJ=hash.o hash_sha256.o hash_sha512.o hash_sha3.o hash_blake2b.o \
-         hash_blake2s.o random.o
+HASH_OBJ=hash.o hash_sha1.o hash_sha256.o hash_sha512.o hash_sha3.o \
+         hash_sha3_block.o hash_blake2b.o hash_blake2s.o random.o
 
 %.o: src/%.c src/*.h include/*.h
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+src/hash_sha3_block.c: tool/sha3.rb
+	ruby tool/sha3.rb >src/hash_sha3_block.c
+hash_sha3_block.o: src/hash_sha3_block.c src/*.h include/*.h
+	$(CC) -c $(CFLAGS) ${CFLAGS_NO_OPT} -o $@ $<
+
+$(LIBNAME): $(HASH_OBJ)
+	$(LINK) $(LIBNAME) $(HASH_OBJ)
+
 hash_test.o: test/hash_test.c
 	$(CC) -c $(CFLAGS) -Isrc -o $@ $<
-hash_test: hash_test.o $(HASH_OBJ)
+hash_test: hash_test.o $(LIBNAME)
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
 	rm -f *.o
 	rm -f hash_test
+	rm -f $(LIBNAME)
 

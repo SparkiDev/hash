@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "hash_sha3.h"
 
+#ifdef HASH_SHA3_SMALL
 /**
  * Rotate a 64-bit value left.
  *
@@ -31,23 +32,6 @@
  * @return  The rotated number.
  */
 #define ROTL64(a, n)    (((a)<<(n))|((a)>>(64-(n))))
-
-/**
- * Put an array of bytes into a 64-bit number.
- * The bytes in big-endian byte order.
- *
- * @param [in] x  The array of bytes.
- * @return  A 64-bit number.
- */
-static uint64_t hash_keccak_le64(const uint8_t *x)
-{
-    uint64_t r=0;
-    uint64_t i;
-
-    for (i=0; i<8; i++)
-        r |= (uint64_t)x[i] << (8*i);
-    return r;
-}
 
 /** An array of values to XOR for block operation. */
 static const uint64_t hash_keccak_r[24] = 
@@ -251,6 +235,26 @@ static void hash_keccak_block(uint64_t *s)
 
         s[0] ^= hash_keccak_r[i];
     }
+}
+#else
+void hash_keccak_block(uint64_t *s);
+#endif
+
+/**
+ * Put an array of bytes into a 64-bit number.
+ * The bytes in big-endian byte order.
+ *
+ * @param [in] x  The array of bytes.
+ * @return  A 64-bit number.
+ */
+static uint64_t hash_keccak_le64(const uint8_t *x)
+{
+    uint64_t r=0;
+    uint64_t i;
+
+    for (i=0; i<8; i++)
+        r |= (uint64_t)x[i] << (8*i);
+    return r;
 }
 
 /**

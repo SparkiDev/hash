@@ -23,7 +23,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash.h"
+#ifdef OPT_HASH_OPENSSL
 #include "openssl/sha.h"
+#endif
+#include "hash_sha1.h"
 #include "hash_sha2.h"
 #include "hash_sha3.h"
 #include "hash_blake2b.h"
@@ -94,6 +97,12 @@ static HASH_METH hash_meths[] =
       (HASH_INIT *)&SHA512_Init, (HASH_UPDATE *)&SHA512_Update,
       (HASH_FINAL *)&SHA512_Final },
 #endif
+    /* Implementation of SHA-1. */
+    { "SHA-1 C", HASH_METH_FLAG_INTERNAL,
+      HASH_ID_SHA1, 160/8, sizeof(HASH_SHA1),
+      (HASH_INIT *)&hash_sha1_init,
+      (HASH_UPDATE *)&hash_sha1_update,
+      (HASH_FINAL *)&hash_sha1_final },
     /* Implementation of SHA-224. */
     { "SHA-224 C", HASH_METH_FLAG_INTERNAL,
       HASH_ID_SHA224, 224/8, sizeof(HASH_SHA256),

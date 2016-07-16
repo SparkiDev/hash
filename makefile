@@ -22,11 +22,15 @@
 CC=gcc
 CFLAGS=-O3 -m64 -Wall -Werror -Wextra -Wpedantic -DCPU_X86_64 -DCC_GCC -Iinclude
 #CFLAGS=-g -m64 -Wall -Werror -Wextra -Wpedantic -DCPU_X86_64 -DCC_GCC -Iinclude
+CFLAGS_NO_OPT=-O1
 LIBS=
+#CFLAGS+=-DHASH_SHA3_SMALL
 #CFLAGS+=-DOPT_HASH_RDRAND
 #CFLAGS+=-DOPT_HASH_OPENSSL
 #CFLAGS+=-DOPT_HASH_OPENSSL_RAND
 #LIBS+=-lcrypto
+LINK=ar r
+LIBNAME=libhash.a
 
 include hash.mk
 

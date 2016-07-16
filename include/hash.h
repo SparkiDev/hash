@@ -36,6 +36,8 @@
 /** Failed to generate require random data. */
 #define HASH_ERR_RANDOM         30
 
+/** The hash algorithm identifier for SHA-1. */
+#define HASH_ID_SHA1			0
 /** The hash algorithm identifier for SHA-224. */
 #define HASH_ID_SHA224			1
 /** The hash algorithm identifier for SHA-256. */

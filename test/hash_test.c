@@ -47,6 +47,7 @@ static int mlen[] = { 16, 64, 256, 1024, 8192, 16384 };
 /* Hash algorithm identifiers to test. */
 HASH_ID id[] =
 {
+    HASH_ID_SHA1,
     HASH_ID_SHA224, HASH_ID_SHA256, HASH_ID_SHA384, HASH_ID_SHA512,
     HASH_ID_SHA512_224, HASH_ID_SHA512_256,
     HASH_ID_SHA3_224, HASH_ID_SHA3_256, HASH_ID_SHA3_384, HASH_ID_SHA3_512,
@@ -268,6 +269,8 @@ int main(int argc, char *argv[])
             alg_id = HASH_ID_BLAKE2B_512;
         else if (strcmp(*argv, "-blake2s") == 0)
             alg_id = HASH_ID_BLAKE2S_256;
+        else if (strcmp(*argv, "-sha1") == 0)
+            alg_id = HASH_ID_SHA1;
         else if (strcmp(*argv, "-int") == 0)
             flags = HASH_METH_FLAG_INTERNAL;
 
