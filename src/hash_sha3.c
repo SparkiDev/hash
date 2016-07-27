@@ -34,7 +34,7 @@
 #define ROTL64(a, n)    (((a)<<(n))|((a)>>(64-(n))))
 
 /** An array of values to XOR for block operation. */
-static const uint64_t hash_keccak_r[24] = 
+static const uint64_t hash_keccak_r[24] =
 {
     0x0000000000000001UL, 0x0000000000008082UL,
     0x800000000000808aUL, 0x8000000080008000UL,
@@ -329,6 +329,7 @@ int hash_sha3_init(HASH_SHA3 *ctx)
  * @param [in] ctx   The context of the hash operation.
  * @param [in] data  The data to digest.
  * @param [in] len   The length of the data to digest.
+ * @param [in] p     The number of 64-bit numbers in a block of data to process.
  * @return  1 on success.
  */
 static int hash_sha3_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len,
@@ -369,7 +370,7 @@ static int hash_sha3_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len,
     for (i=0; i < len; i++)
         ctx->t[i] = data[i];
     ctx->i += i;
-    
+
     return 1;
 }
 
@@ -403,6 +404,42 @@ static int hash_sha3_final(unsigned char *md, HASH_SHA3 *ctx, uint8_t r,
 }
 
 /**
+ * Initialize the SHA-3 digest context for MAC.
+ *
+ * @param [in] ctx  The context of the hash operation.
+ * @param [in] key  The key to initialize with.
+ * @param [in] len  The length of the key.
+ * @param [in] p    The number of 64-bit numbers in a block of data to process.
+ * @return  1 on success.
+ */
+int hash_sha3_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len,
+    uint8_t p)
+{
+    int i;
+
+    for (i=0; i<25; i++)
+        ctx->s[i] = 0;
+    ctx->i = 0;
+
+    hash_sha3_update(ctx, key, len, p);
+
+    return 1;
+}
+
+/**
+ * Initialize the SHA-3_224 digest context for MAC.
+ *
+ * @param [in] ctx  The context of the hash operation.
+ * @param [in] key  The key to initialize with.
+ * @param [in] len  The length of the key.
+ * @return  1 on success.
+ */
+int hash_sha3_224_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len)
+{
+    return hash_sha3_mac_init(ctx, key, len, 18);
+}
+
+/**
  * Update the SHA-3_224 digest with more data.
  *
  * @param [in] ctx   The context of the hash operation.
@@ -427,6 +464,19 @@ int hash_sha3_224_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len)
 int hash_sha3_224_final(unsigned char *md, HASH_SHA3 *ctx)
 {
     return hash_sha3_final(md, ctx, 18, 28);
+}
+
+/**
+ * Initialize the SHA-3_256 digest context for MAC.
+ *
+ * @param [in] ctx  The context of the hash operation.
+ * @param [in] key  The key to initialize with.
+ * @param [in] len  The length of the key.
+ * @return  1 on success.
+ */
+int hash_sha3_256_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len)
+{
+    return hash_sha3_mac_init(ctx, key, len, 17);
 }
 
 /**
@@ -457,6 +507,19 @@ int hash_sha3_256_final(unsigned char *md, HASH_SHA3 *ctx)
 }
 
 /**
+ * Initialize the SHA-3_384 digest context for MAC.
+ *
+ * @param [in] ctx  The context of the hash operation.
+ * @param [in] key  The key to initialize with.
+ * @param [in] len  The length of the key.
+ * @return  1 on success.
+ */
+int hash_sha3_384_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len)
+{
+    return hash_sha3_mac_init(ctx, key, len, 13);
+}
+
+/**
  * Update the SHA-3_384 digest with more data.
  *
  * @param [in] ctx   The context of the hash operation.
@@ -481,6 +544,19 @@ int hash_sha3_384_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len)
 int hash_sha3_384_final(unsigned char *md, HASH_SHA3 *ctx)
 {
     return hash_sha3_final(md, ctx, 13, 48);
+}
+
+/**
+ * Initialize the SHA-3_512 digest context for MAC.
+ *
+ * @param [in] ctx  The context of the hash operation.
+ * @param [in] key  The key to initialize with.
+ * @param [in] len  The length of the key.
+ * @return  1 on success.
+ */
+int hash_sha3_512_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len)
+{
+    return hash_sha3_mac_init(ctx, key, len, 9);
 }
 
 /**

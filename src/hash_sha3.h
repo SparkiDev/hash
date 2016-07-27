@@ -35,12 +35,16 @@ typedef struct hash_sha3_t
 } HASH_SHA3;
 
 int hash_sha3_init(HASH_SHA3 *ctx);
+int hash_sha3_224_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len);
 int hash_sha3_224_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len);
 int hash_sha3_224_final(unsigned char *md, HASH_SHA3 *ctx);
+int hash_sha3_256_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len);
 int hash_sha3_256_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len);
 int hash_sha3_256_final(unsigned char *md, HASH_SHA3 *ctx);
+int hash_sha3_384_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len);
 int hash_sha3_384_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len);
 int hash_sha3_384_final(unsigned char *md, HASH_SHA3 *ctx);
+int hash_sha3_512_mac_init(HASH_SHA3 *ctx, const uint8_t *key, size_t len);
 int hash_sha3_512_update(HASH_SHA3 *ctx, const uint8_t *data, size_t len);
 int hash_sha3_512_final(unsigned char *md, HASH_SHA3 *ctx);
 

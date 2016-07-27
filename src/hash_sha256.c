@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_sha2.h"
+#include "hmac.h"
+
+/** The size of a block that is processed. */
+#define BLOCK_SIZE      64
 
 /** The constants k to use with SHA-256 block operation (and SHA-224). */
 static const uint32_t hash_sha256_k[] =
@@ -102,7 +106,7 @@ static void hash_sha256_block(HASH_SHA256 *ctx, const uint8_t *m)
             w[i] |= ((uint32_t)m[i*4+j]) << ((3-j)*8);
     }
 
-    for (i=0; i<64; i+=16)
+    for (i=0; i<BLOCK_SIZE; i+=16)
     {
         if (i >= 16)
         {
@@ -165,7 +169,7 @@ static void hash_sha256_fin(HASH_SHA256 *ctx)
 
     if (o > 56)
     {
-        memset(&m[o], 0, 64 - o);
+        memset(&m[o], 0, BLOCK_SIZE - o);
         hash_sha256_block(ctx, m);
         o = 0;
     }
@@ -298,9 +302,9 @@ int hash_sha256_update(HASH_SHA256 *ctx, const void *data, size_t len)
 
     if (o > 0)
     {
-        l = 64 - o;
+        l = BLOCK_SIZE - o;
         if (len < l) l = len;
-    
+
         t = &m[o];
         for (i=0; i<l; i++)
             t[i] = d[i];
@@ -308,17 +312,17 @@ int hash_sha256_update(HASH_SHA256 *ctx, const void *data, size_t len)
         len -= l;
         o += l;
 
-        if (o == 64)
+        if (o == BLOCK_SIZE)
         {
             hash_sha256_block(ctx, m);
             o = 0;
         }
     }
-    while (len >= 64)
+    while (len >= BLOCK_SIZE)
     {
         hash_sha256_block(ctx, d);
-        d += 64;
-        len -= 64;
+        d += BLOCK_SIZE;
+        len -= BLOCK_SIZE;
     }
     for (i=0; i<len; i++)
         m[i] = d[i];
@@ -346,6 +350,64 @@ int hash_sha256_final(unsigned char *md, HASH_SHA256 *ctx)
         for (j=0; j<4; j++)
             md[i*4+j] = h[i] >> ((3-j)*8);
 
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-224 operation with a key.
+ *
+ * @param [in] ctx  The SHA256 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha224_init(HASH_SHA256 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA224_LEN, hash_sha224_init,
+        hash_sha224_update, hash_sha224_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-224 operation.
+ * Output 224 bits or 28 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA256 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha224_final(unsigned char *md, HASH_SHA256 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA224_LEN, hash_sha224_update, hash_sha224_final);
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-256 operation with a key.
+ *
+ * @param [in] ctx  The SHA256 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha256_init(HASH_SHA256 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA256_LEN, hash_sha256_init,
+        hash_sha256_update, hash_sha256_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-256 operation.
+ * Output 256 bits or 32 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA256 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha256_final(unsigned char *md, HASH_SHA256 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA256_LEN, hash_sha256_update, hash_sha256_final);
     return 1;
 }
 

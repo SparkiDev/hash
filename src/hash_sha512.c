@@ -25,6 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_sha2.h"
+#include "hmac.h"
+
+/** The size of a block that is processed. */
+#define BLOCK_SIZE	128
 
 /** The constants k to use with SHA-512 block operation (and SHA-384, etc.). */
 static const uint64_t hash_sha512_k[] =
@@ -190,7 +194,7 @@ static void hash_sha512_fin(HASH_SHA512 *ctx)
 
     if (o > 112)
     {
-        memset(&m[o], 0, 128 - o);
+        memset(&m[o], 0, BLOCK_SIZE - o);
         hash_sha512_block(ctx, m);
         o = 0;
     }
@@ -329,7 +333,7 @@ int hash_sha512_update(HASH_SHA512 *ctx, const void *data, size_t len)
 
     if (o > 0)
     {
-        l = 128 - o;
+        l = BLOCK_SIZE - o;
         if (len < l) l = len;
 
         t = &m[o];
@@ -339,17 +343,17 @@ int hash_sha512_update(HASH_SHA512 *ctx, const void *data, size_t len)
         len -= l;
         o += l;
 
-        if (o == 128)
+        if (o == BLOCK_SIZE)
         {
             hash_sha512_block(ctx, m);
             o = 0;
         }
     }
-    while (len >= 128)
+    while (len >= BLOCK_SIZE)
     {
         hash_sha512_block(ctx, d);
-        d += 128;
-        len -= 128;
+        d += BLOCK_SIZE;
+        len -= BLOCK_SIZE;
     }
     for (i=0; i<len; i++)
         m[i] = d[i];
@@ -505,6 +509,124 @@ int hash_sha512_256_final(unsigned char *md, HASH_SHA512 *ctx)
         for (j=0; j<8; j++)
             md[i*8+j] = h[i] >> ((7-j)*8);
 
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-384 operation with a key.
+ *
+ * @param [in] ctx  The SHA512 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha384_init(HASH_SHA512 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA384_LEN, hash_sha384_init,
+        hash_sha384_update, hash_sha384_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-384 operation.
+ * Output 384 bits or 48 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA1 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha384_final(unsigned char *md, HASH_SHA512 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA384_LEN, hash_sha384_update, hash_sha384_final);
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-512 operation with a key.
+ *
+ * @param [in] ctx  The SHA512 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_init(HASH_SHA512 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA512_LEN, hash_sha512_init,
+        hash_sha512_update, hash_sha512_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-512 operation.
+ * Output 512 bits or 64 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA1 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_final(unsigned char *md, HASH_SHA512 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA512_LEN, hash_sha512_update, hash_sha512_final);
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-512_224 operation with a key.
+ *
+ * @param [in] ctx  The SHA512 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_224_init(HASH_SHA512 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA512_224_LEN, hash_sha512_224_init,
+        hash_sha512_224_update, hash_sha512_224_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-512_224 operation.
+ * Output 224 bits or 28 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA1 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_224_final(unsigned char *md, HASH_SHA512 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA512_224_LEN, hash_sha512_224_update,
+        hash_sha512_224_final);
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-512_256 operation with a key.
+ *
+ * @param [in] ctx  The SHA512 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_256_init(HASH_SHA512 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA512_256_LEN, hash_sha512_256_init,
+        hash_sha512_256_update, hash_sha512_256_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-512_256 operation.
+ * Output 256 bits or 32 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA1 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha512_256_final(unsigned char *md, HASH_SHA512 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA512_256_LEN, hash_sha512_256_update,
+        hash_sha512_256_final);
     return 1;
 }
 

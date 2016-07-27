@@ -22,6 +22,9 @@
 
 #include <stdint.h>
 
+/** The length of the SHA-1 digest output. */
+#define HASH_SHA1_LEN	20
+
 /**
  * Rotate left 32-bit integer.
  *
@@ -47,4 +50,7 @@ typedef struct hash_sha1_st
 int hash_sha1_init(HASH_SHA1 *ctx);
 int hash_sha1_update(HASH_SHA1 *ctx, const void *data, size_t len);
 int hash_sha1_final(unsigned char *md, HASH_SHA1 *ctx);
+
+int hmac_sha1_init(HASH_SHA1 *ctx, const void *key, size_t len);
+int hmac_sha1_final(unsigned char *md, HASH_SHA1 *ctx);
 

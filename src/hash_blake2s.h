@@ -38,6 +38,8 @@ typedef struct hash_blake2s_st
 
 int hash_blake2s_224_init(HASH_BLAKE2S *ctx);
 int hash_blake2s_256_init(HASH_BLAKE2S *ctx);
+int hash_blake2s_224_mac_init(HASH_BLAKE2S *ctx, const void *key, size_t len);
+int hash_blake2s_256_mac_init(HASH_BLAKE2S *ctx, const void *key, size_t len);
 int hash_blake2s_update(HASH_BLAKE2S *ctx, const void *in, size_t len);
 int hash_blake2s_224_final(void *out, HASH_BLAKE2S *ctx);
 int hash_blake2s_256_final(void *out, HASH_BLAKE2S *ctx);

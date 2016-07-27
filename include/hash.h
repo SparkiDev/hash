@@ -76,7 +76,8 @@
 
 /** Flag indicates the method implementation is internal code. */
 #define HASH_METH_FLAG_INTERNAL		0x01
- 
+
+
 /** The hash algorithm identifier type. */
 typedef int HASH_ID;
 

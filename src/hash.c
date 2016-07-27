@@ -60,7 +60,7 @@ typedef struct hash_meth_st
     HASH_FINAL *final;
 } HASH_METH;
 
-/** The NTRU hash structure. */
+/** The hash structure. */
 struct hash_st
 {
     /** The hash algorithm method. */

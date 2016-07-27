@@ -24,7 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_sha1.h"
+#include "hmac.h"
 
+/** The size of a block that is processed. */
+#define BLOCK_SIZE	64
 
 /** The first constant k to use with SHA-1 block operation. */
 #define HASH_SHA1_K_0	0x5A827999
@@ -218,7 +221,7 @@ static void hash_sha1_fin(HASH_SHA1 *ctx)
 
     if (o > 56)
     {
-        memset(&m[o], 0, 64 - o);
+        memset(&m[o], 0, BLOCK_SIZE - o);
         hash_sha1_block(ctx, m);
         o = 0;
     }
@@ -280,9 +283,9 @@ int hash_sha1_update(HASH_SHA1 *ctx, const void *data, size_t len)
 
     if (o > 0)
     {
-        l = 64 - o;
+        l = BLOCK_SIZE - o;
         if (len < l) l = len;
-    
+
         t = &m[o];
         for (i=0; i<l; i++)
             t[i] = d[i];
@@ -290,17 +293,17 @@ int hash_sha1_update(HASH_SHA1 *ctx, const void *data, size_t len)
         len -= l;
         o += l;
 
-        if (o == 64)
+        if (o == BLOCK_SIZE)
         {
             hash_sha1_block(ctx, m);
             o = 0;
         }
     }
-    while (len >= 64)
+    while (len >= BLOCK_SIZE)
     {
         hash_sha1_block(ctx, d);
-        d += 64;
-        len -= 64;
+        d += BLOCK_SIZE;
+        len -= BLOCK_SIZE;
     }
     for (i=0; i<len; i++)
         m[i] = d[i];
@@ -328,6 +331,35 @@ int hash_sha1_final(unsigned char *md, HASH_SHA1 *ctx)
         for (j=0; j<4; j++)
             md[i*4+j] = h[i] >> ((3-j)*8);
 
+    return 1;
+}
+
+/**
+ * Initialize the HMAC-SHA-1 operation with a key.
+ *
+ * @param [in] ctx  The SHA1 context objects.
+ * @param [in] key  The key data.
+ * @param [in] len  The length of the key data.
+ * @return  1 to indicate success.
+ */
+int hmac_sha1_init(HASH_SHA1 *ctx, const void *key, size_t len)
+{
+    HMAC_INIT(ctx, key, len, HASH_SHA1_LEN, hash_sha1_init, hash_sha1_update,
+        hash_sha1_final);
+    return 1;
+}
+
+/**
+ * Finalize the HMAC-SHA-1 operation.
+ * Output 160 bits or 20 bytes.
+ *
+ * @param [in] md   The MAC data buffer.
+ * @param [in] ctx  The SHA1 context objects.
+ * @return  1 to indicate success.
+ */
+int hmac_sha1_final(unsigned char *md, HASH_SHA1 *ctx)
+{
+    HMAC_FINAL(md, ctx, HASH_SHA1_LEN, hash_sha1_update, hash_sha1_final);
     return 1;
 }
 

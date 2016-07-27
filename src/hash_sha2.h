@@ -22,6 +22,19 @@
 
 #include <stdint.h>
 
+/** The length of the SHA-224 digest output. */
+#define HASH_SHA224_LEN		28
+/** The length of the SHA-256 digest output. */
+#define HASH_SHA256_LEN		32
+/** The length of the SHA-384 digest output. */
+#define HASH_SHA384_LEN		48
+/** The length of the SHA-512 digest output. */
+#define HASH_SHA512_LEN		64
+/** The length of the SHA-512_224 digest output. */
+#define HASH_SHA512_224_LEN	28
+/** The length of the SHA-512_256 digest output. */
+#define HASH_SHA512_256_LEN	32
+
 /**
  * Rotate right 32-bit integer.
  *
@@ -98,4 +111,22 @@ int hash_sha512_224_final(unsigned char *md, HASH_SHA512 *ctx);
 int hash_sha512_256_init(HASH_SHA512 *ctx);
 #define hash_sha512_256_update hash_sha512_update
 int hash_sha512_256_final(unsigned char *md, HASH_SHA512 *ctx);
+
+int hmac_sha224_init(HASH_SHA256 *ctx, const void *key, size_t len);
+int hmac_sha224_final(unsigned char *md, HASH_SHA256 *ctx);
+
+int hmac_sha256_init(HASH_SHA256 *ctx, const void *key, size_t len);
+int hmac_sha256_final(unsigned char *md, HASH_SHA256 *ctx);
+
+int hmac_sha384_init(HASH_SHA512 *ctx, const void *key, size_t len);
+int hmac_sha384_final(unsigned char *md, HASH_SHA512 *ctx);
+
+int hmac_sha512_init(HASH_SHA512 *ctx, const void *key, size_t len);
+int hmac_sha512_final(unsigned char *md, HASH_SHA512 *ctx);
+
+int hmac_sha512_224_init(HASH_SHA512 *ctx, const void *key, size_t len);
+int hmac_sha512_224_final(unsigned char *md, HASH_SHA512 *ctx);
+
+int hmac_sha512_256_init(HASH_SHA512 *ctx, const void *key, size_t len);
+int hmac_sha512_256_final(unsigned char *md, HASH_SHA512 *ctx);
 

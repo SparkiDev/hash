@@ -19,10 +19,10 @@
 # SOFTWARE.
 #
 
+ALL=$(LIBNAME) hash_test mac_test
+all: $(ALL)
 
-all: $(LIBNAME) hash_test
-
-HASH_OBJ=hash.o hash_sha1.o hash_sha256.o hash_sha512.o hash_sha3.o \
+HASH_OBJ=hash.o mac.o hash_sha1.o hash_sha256.o hash_sha512.o hash_sha3.o \
          hash_sha3_block.o hash_blake2b.o hash_blake2s.o random.o
 
 %.o: src/%.c src/*.h include/*.h
@@ -41,8 +41,12 @@ hash_test.o: test/hash_test.c
 hash_test: hash_test.o $(LIBNAME)
 	$(CC) -o $@ $^ $(LIBS)
 
+mac_test.o: test/mac_test.c
+	$(CC) -c $(CFLAGS) -Isrc -o $@ $<
+mac_test: mac_test.o $(LIBNAME)
+	$(CC) -o $@ $^ $(LIBS)
+
 clean:
 	rm -f *.o
-	rm -f hash_test
-	rm -f $(LIBNAME)
+	rm -f $(ALL)
 
