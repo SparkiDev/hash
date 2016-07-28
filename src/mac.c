@@ -243,7 +243,7 @@ int MAC_METH_get_len(MAC_ID id, int *len)
 }
 
 /**
- * Create an MAC algorithm object.
+ * Create a MAC algorithm object.
  *
  * @param [in]  id     The MAC algorithm identifier.
  * @param [in]  flags  The method implementation flags required.
