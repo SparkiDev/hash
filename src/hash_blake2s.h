@@ -23,6 +23,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+/** The length of the BLAKE2s-224 digest output. */
+#define HASH_BLAKE2S_224_LEN    28
+/** The length of the BLAKE2s-256 digest output. */
+#define HASH_BLAKE2S_256_LEN    32
+
 /** Data structure for BLAKE2s */
 typedef struct hash_blake2s_st
 {

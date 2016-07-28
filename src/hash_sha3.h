@@ -23,6 +23,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+/** The length of the SHA3-224 digest output. */
+#define HASH_SHA3_224_LEN	28
+/** The length of the SHA3-256 digest output. */
+#define HASH_SHA3_256_LEN	32
+/** The length of the SHA3-384 digest output. */
+#define HASH_SHA3_384_LEN	48
+/** The length of the SHA3-512 digest output. */
+#define HASH_SHA3_512_LEN	64
+
 /** The SHA-3 hash algorithm data. */
 typedef struct hash_sha3_t
 {
