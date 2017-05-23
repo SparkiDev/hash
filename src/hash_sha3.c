@@ -249,12 +249,16 @@ void hash_keccak_block(uint64_t *s);
  */
 static uint64_t hash_keccak_le64(const uint8_t *x)
 {
+#ifndef LITTLE_ENDIAN
     uint64_t r=0;
     uint64_t i;
 
     for (i=0; i<8; i++)
         r |= (uint64_t)x[i] << (8*i);
     return r;
+#else
+    return *(uint64_t *)x;
+#endif
 }
 
 /**
